@@ -33,36 +33,44 @@ def main(page: ft.Page):
     download_status = ft.Text("", color=ft.Colors.GREY_400, size=11, visible=False)
     download_progress = ft.ProgressBar(width=280, value=None, visible=False)
 
-    chat_list = ft.ListView(expand=True, spacing=10, auto_scroll=True)
+    chat_list = ft.ListView(expand=True, spacing=14, auto_scroll=True)
 
     search_bar = ft.TextField(
-        hint_text="Ask a survival question...",
-        prefix_icon=ft.Icons.SEARCH,
+        hint_text="Describe the situation...",
+        prefix_icon=ft.Icons.CHAT_BUBBLE_OUTLINE,
         filled=True,
+        border_radius=22,
+        content_padding=ft.padding.symmetric(horizontal=16, vertical=14),
         expand=True,
+        on_submit=lambda e: on_search_click(None),
     )
 
     def append_message(text, is_user):
+        # Dynamically set width only if the text is long enough to need wrapping
+        needs_wrap = len(text) > 35 or "\n" in text
+
         if is_user:
             content_control = ft.Text(text, selectable=True)
         else:
-            content_control = ft.Markdown(text)
+            content_control = ft.Markdown(text, selectable=True)
 
         bubble = ft.Container(
             content=content_control,
             bgcolor=ft.Colors.RED_400 if is_user else ft.Colors.BLUE_GREY_800,
             border_radius=12,
             padding=12,
-            width=340,
+            width=280 if needs_wrap else None, # MAGIC FIX: Auto-shrinks if None
         )
         row = ft.Row(
             controls=[bubble],
             alignment=ft.MainAxisAlignment.END if is_user else ft.MainAxisAlignment.START,
+            tight=True,
         )
         chat_list.controls.append(row)
         return bubble.content
 
-    async def process_query(user_query, ai_status_text):
+    # Notice we now pass status_bubble into process_query
+    async def process_query(user_query, ai_status_text, status_bubble):
         nonlocal model_ready
         progress_queue = queue.Queue()
         stream_queue = queue.Queue()
@@ -75,7 +83,6 @@ def main(page: ft.Page):
             stream_queue.put(text_chunk)
 
         try:
-            # Start DB lookup early so it overlaps with first-run model initialization.
             db_task = asyncio.create_task(asyncio.to_thread(search_database, user_query))
 
             if not model_ready:
@@ -104,7 +111,7 @@ def main(page: ft.Page):
 
             db_result = await db_task
 
-            ai_status_text.value = "."
+            ai_status_text.value = "●"
             page.update()
 
             if db_result:
@@ -128,17 +135,23 @@ def main(page: ft.Page):
                 while not stream_queue.empty():
                     text_chunk = stream_queue.get_nowait()
                     if text_chunk:
-                        if ai_status_text.value in {".", "..", "..."}:
+                        if ai_status_text.value in {"●", "●●", "●●●"}:
                             ai_status_text.value = ""
                         ai_status_text.value += text_chunk
+                        
+                        # DYNAMIC WIDTH LOCK: Once the stream gets long, lock it to 280px so it wraps
+                        if status_bubble.width is None and (len(ai_status_text.value) > 35 or "\n" in ai_status_text.value):
+                            status_bubble.width = 280
+                            
                         updated = True
-                if not updated and ai_status_text.value in {".", "..", "..."}:
+                if not updated and ai_status_text.value in {"●", "●●", "●●●"}:
                     now = asyncio.get_running_loop().time()
                     if now - last_dot_update >= 0.30:
-                        ai_status_text.value = "." * ((len(ai_status_text.value) % 3) + 1)
+                        ai_status_text.value = "●" * ((len(ai_status_text.value) // 1) % 3 + 1)
                         last_dot_update = now
                         updated = True
                 if updated:
+                    await chat_list.scroll_to(offset=-1, duration=80)
                     page.update()
                 await asyncio.sleep(0.04)
 
@@ -147,9 +160,14 @@ def main(page: ft.Page):
                 if text_chunk:
                     ai_status_text.value += text_chunk
 
+            # Final check just in case the stream was instant
+            if status_bubble.width is None and (len(ai_status_text.value) > 35 or "\n" in ai_status_text.value):
+                status_bubble.width = 280
+
             ai_response = await ai_task
 
             ai_status_text.value = ai_response.strip()
+            await chat_list.scroll_to(offset=-1, duration=120)
             chat_history.append({"role": "user", "content": user_query})
             chat_history.append({"role": "assistant", "content": ai_status_text.value})
         except Exception:
@@ -170,29 +188,49 @@ def main(page: ft.Page):
 
         page.run_task(search_button.focus)
         append_message(user_query, is_user=True)
-        status_text = append_message("SurvivAI is thinking...", is_user=False)
+        
+        # We start the thinking bubble with width=None so it perfectly hugs the single dot
+        status_control = ft.Markdown("●", selectable=True)
+        status_bubble = ft.Container(
+            content=status_control,
+            bgcolor=ft.Colors.BLUE_GREY_800,
+            border_radius=12,
+            padding=12,
+            width=None, # Starts small!
+        )
+        status_row = ft.Row(
+            controls=[status_bubble],
+            alignment=ft.MainAxisAlignment.START,
+            tight=True,
+        )
+        chat_list.controls.append(status_row)
+        status_text = status_control
 
         search_bar.value = ""
-        search_bar.hint_text = "Give more info or ask"
+        search_bar.hint_text = "Give more info or ask..."
         search_button.disabled = True
         new_chat_button.disabled = True
         page.update()
 
-        page.run_task(process_query, user_query, status_text)
+        # Pass the bubble object into process_query so it can resize it later
+        page.run_task(process_query, user_query, status_text, status_bubble)
 
     def on_new_chat_click(e):
         chat_history.clear()
         chat_list.controls.clear()
         search_bar.value = ""
-        search_bar.hint_text = "Ask a survival question..."
+        search_bar.hint_text = "Describe the situation..."
         page.update()
 
     search_button = ft.ElevatedButton(
-        "Send",
+        "",
+        icon=ft.Icons.SEND,
         on_click=on_search_click,
+        width=46,
+        height=46,
         style=ft.ButtonStyle(
-            shape=ft.RoundedRectangleBorder(radius=10),
-            bgcolor=ft.Colors.RED_900,
+            shape=ft.CircleBorder(),
+            bgcolor=ft.Colors.RED_400,
             color=ft.Colors.WHITE,
         ),
     )
