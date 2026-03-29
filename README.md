@@ -1,2 +1,2 @@
 # SurvivAI
-An offline emergency assistant app.
+An offline emergency assistant app for phones.
