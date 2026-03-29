@@ -17,22 +17,167 @@ def search_database(query):
         return ("Error", str(e))
 
 def main(page: ft.Page):
+    THEMES = {
+        "Default": {
+            "bg": ft.Colors.BLACK,
+            "header": ft.Colors.RED_400,
+            "text_subtle": ft.Colors.GREY_500,
+            "border": ft.Colors.GREY_800,
+            "accent": ft.Colors.RED_400,
+            "accent_soft": ft.Colors.RED_300,
+            "button_bg": ft.Colors.with_opacity(0.15, ft.Colors.RED_900),
+            "input_bg": ft.Colors.with_opacity(0.18, ft.Colors.GREY_900),
+            "chat_bg": ft.Colors.with_opacity(0.12, ft.Colors.GREY_900),
+            "user_bubble": ft.Colors.with_opacity(0.78, ft.Colors.RED_500),
+            "assistant_bubble": ft.Colors.with_opacity(0.36, ft.Colors.BLUE_GREY_800),
+        },
+        "Default Soft": {
+            "bg": ft.Colors.BLACK,
+            "header": ft.Colors.RED_300,
+            "text_subtle": ft.Colors.GREY_400,
+            "border": ft.Colors.GREY_700,
+            "accent": ft.Colors.RED_300,
+            "accent_soft": ft.Colors.RED_200,
+            "button_bg": ft.Colors.with_opacity(0.14, ft.Colors.RED_900),
+            "input_bg": ft.Colors.with_opacity(0.16, ft.Colors.GREY_900),
+            "chat_bg": ft.Colors.with_opacity(0.10, ft.Colors.GREY_900),
+            "user_bubble": ft.Colors.with_opacity(0.68, ft.Colors.RED_400),
+            "assistant_bubble": ft.Colors.with_opacity(0.30, ft.Colors.BLUE_GREY_800),
+        },
+        "Default Carbon": {
+            "bg": ft.Colors.BLACK,
+            "header": ft.Colors.RED_500,
+            "text_subtle": ft.Colors.GREY_500,
+            "border": ft.Colors.BLUE_GREY_800,
+            "accent": ft.Colors.RED_500,
+            "accent_soft": ft.Colors.RED_300,
+            "button_bg": ft.Colors.with_opacity(0.12, ft.Colors.RED_900),
+            "input_bg": ft.Colors.with_opacity(0.20, ft.Colors.BLUE_GREY_900),
+            "chat_bg": ft.Colors.with_opacity(0.10, ft.Colors.BLUE_GREY_900),
+            "user_bubble": ft.Colors.with_opacity(0.74, ft.Colors.RED_600),
+            "assistant_bubble": ft.Colors.with_opacity(0.34, ft.Colors.BLUE_GREY_900),
+        },
+        "Default Glow": {
+            "bg": ft.Colors.BLACK,
+            "header": ft.Colors.RED_300,
+            "text_subtle": ft.Colors.with_opacity(0.86, ft.Colors.RED_100),
+            "border": ft.Colors.RED_700,
+            "accent": ft.Colors.RED_300,
+            "accent_soft": ft.Colors.RED_200,
+            "button_bg": ft.Colors.with_opacity(0.16, ft.Colors.RED_900),
+            "input_bg": ft.Colors.with_opacity(0.20, ft.Colors.RED_900),
+            "chat_bg": ft.Colors.with_opacity(0.11, ft.Colors.RED_900),
+            "user_bubble": ft.Colors.with_opacity(0.70, ft.Colors.RED_400),
+            "assistant_bubble": ft.Colors.with_opacity(0.34, ft.Colors.BLUE_GREY_800),
+        },
+        "Forest": {
+            "bg": ft.Colors.BLACK,
+            "header": ft.Colors.GREEN_400,
+            "text_subtle": ft.Colors.with_opacity(0.82, ft.Colors.GREEN_200),
+            "border": ft.Colors.GREEN_700,
+            "accent": ft.Colors.GREEN_400,
+            "accent_soft": ft.Colors.GREEN_300,
+            "button_bg": ft.Colors.with_opacity(0.15, ft.Colors.GREEN_900),
+            "input_bg": ft.Colors.with_opacity(0.18, ft.Colors.GREEN_900),
+            "chat_bg": ft.Colors.with_opacity(0.14, ft.Colors.GREEN_900),
+            "user_bubble": ft.Colors.with_opacity(0.75, ft.Colors.GREEN_500),
+            "assistant_bubble": ft.Colors.with_opacity(0.36, ft.Colors.GREEN_900),
+        },
+        "Ocean": {
+            "bg": ft.Colors.BLUE_GREY_900,
+            "header": ft.Colors.CYAN_300,
+            "text_subtle": ft.Colors.with_opacity(0.84, ft.Colors.CYAN_100),
+            "border": ft.Colors.CYAN_700,
+            "accent": ft.Colors.CYAN_400,
+            "accent_soft": ft.Colors.CYAN_200,
+            "button_bg": ft.Colors.with_opacity(0.14, ft.Colors.CYAN_900),
+            "input_bg": ft.Colors.with_opacity(0.18, ft.Colors.CYAN_900),
+            "chat_bg": ft.Colors.with_opacity(0.14, ft.Colors.CYAN_900),
+            "user_bubble": ft.Colors.with_opacity(0.74, ft.Colors.CYAN_600),
+            "assistant_bubble": ft.Colors.with_opacity(0.34, ft.Colors.BLUE_900),
+        },
+        "Violet": {
+            "bg": ft.Colors.BLUE_GREY_900,
+            "header": ft.Colors.DEEP_PURPLE_300,
+            "text_subtle": ft.Colors.with_opacity(0.82, ft.Colors.DEEP_PURPLE_100),
+            "border": ft.Colors.DEEP_PURPLE_700,
+            "accent": ft.Colors.DEEP_PURPLE_400,
+            "accent_soft": ft.Colors.DEEP_PURPLE_200,
+            "button_bg": ft.Colors.with_opacity(0.14, ft.Colors.DEEP_PURPLE_900),
+            "input_bg": ft.Colors.with_opacity(0.18, ft.Colors.DEEP_PURPLE_900),
+            "chat_bg": ft.Colors.with_opacity(0.14, ft.Colors.DEEP_PURPLE_900),
+            "user_bubble": ft.Colors.with_opacity(0.74, ft.Colors.DEEP_PURPLE_500),
+            "assistant_bubble": ft.Colors.with_opacity(0.34, ft.Colors.INDIGO_900),
+        },
+        "Amber": {
+            "bg": ft.Colors.BLACK,
+            "header": ft.Colors.AMBER_400,
+            "text_subtle": ft.Colors.with_opacity(0.82, ft.Colors.AMBER_200),
+            "border": ft.Colors.AMBER_700,
+            "accent": ft.Colors.AMBER_400,
+            "accent_soft": ft.Colors.AMBER_300,
+            "button_bg": ft.Colors.with_opacity(0.14, ft.Colors.AMBER_900),
+            "input_bg": ft.Colors.with_opacity(0.18, ft.Colors.AMBER_900),
+            "chat_bg": ft.Colors.with_opacity(0.13, ft.Colors.AMBER_900),
+            "user_bubble": ft.Colors.with_opacity(0.76, ft.Colors.AMBER_600),
+            "assistant_bubble": ft.Colors.with_opacity(0.34, ft.Colors.BROWN_800),
+        },
+        "Mono": {
+            "bg": ft.Colors.BLACK,
+            "header": ft.Colors.GREY_300,
+            "text_subtle": ft.Colors.GREY_500,
+            "border": ft.Colors.GREY_700,
+            "accent": ft.Colors.BLUE_GREY_300,
+            "accent_soft": ft.Colors.GREY_300,
+            "button_bg": ft.Colors.with_opacity(0.14, ft.Colors.GREY_900),
+            "input_bg": ft.Colors.with_opacity(0.18, ft.Colors.GREY_900),
+            "chat_bg": ft.Colors.with_opacity(0.12, ft.Colors.GREY_900),
+            "user_bubble": ft.Colors.with_opacity(0.72, ft.Colors.BLUE_GREY_600),
+            "assistant_bubble": ft.Colors.with_opacity(0.32, ft.Colors.GREY_800),
+        },
+    }
+
+    current_theme_name = "Default"
+    active_theme = THEMES[current_theme_name]
+    TEXT_SIZES = {
+        "Small": 12,
+        "Medium": 14,
+        "Large": 16,
+        "XL": 18,
+        "XXL": 30,
+    }
+    current_text_size_name = "Medium"
+    CHAT_TEXT_SIZE = TEXT_SIZES[current_text_size_name]
+
+    THEME_BG = active_theme["bg"]
+    THEME_HEADER = active_theme["header"]
+    THEME_TEXT_SUBTLE = active_theme["text_subtle"]
+    THEME_BORDER = active_theme["border"]
+    THEME_ACCENT = active_theme["accent"]
+    THEME_ACCENT_SOFT = active_theme["accent_soft"]
+    THEME_BUTTON_BG = active_theme["button_bg"]
+    THEME_INPUT_BG = active_theme["input_bg"]
+    THEME_CHAT_BG = active_theme["chat_bg"]
+    THEME_USER_BUBBLE = active_theme["user_bubble"]
+    THEME_ASSISTANT_BUBBLE = active_theme["assistant_bubble"]
+
     page.title = "SurvivAI"
     page.theme_mode = ft.ThemeMode.DARK
+    page.bgcolor = THEME_BG
     page.padding = 20
     chat_history = []
     model_ready = False
     auto_follow_stream = True
     generation_state = {"is_generating": False, "stop_requested": False}
 
-    header = ft.Text("SurvivAI", size=32, weight=ft.FontWeight.BOLD, color=ft.Colors.RED_400)
+    header = ft.Text("SurvivAI", size=32, weight=ft.FontWeight.BOLD, color=THEME_HEADER)
     subtitle = ft.Text(
         "May be wrong. Not for medical decisions.",
-        color=ft.Colors.GREY_500,
+        color=THEME_TEXT_SUBTLE,
         size=11,
     )
 
-    download_status = ft.Text("", color=ft.Colors.GREY_400, size=11, visible=False)
+    download_status = ft.Text("", color=THEME_TEXT_SUBTLE, size=11, visible=False)
     download_progress = ft.ProgressBar(width=280, value=None, visible=False)
 
     def on_chat_scroll(e: ft.OnScrollEvent):
@@ -59,6 +204,12 @@ def main(page: ft.Page):
         hint_text="Describe the situation...",
         prefix_icon=ft.Icons.CHAT_BUBBLE_OUTLINE,
         filled=True,
+        text_size=CHAT_TEXT_SIZE,
+        bgcolor=THEME_INPUT_BG,
+        border_color=THEME_BORDER,
+        focused_border_color=THEME_ACCENT,
+        cursor_color=THEME_ACCENT,
+        hint_style=ft.TextStyle(color=THEME_TEXT_SUBTLE, size=max(11, CHAT_TEXT_SIZE - 1)),
         border_radius=22,
         content_padding=ft.padding.symmetric(horizontal=16, vertical=14),
         expand=True,
@@ -70,17 +221,18 @@ def main(page: ft.Page):
         needs_wrap = len(text) > 35 or "\n" in text
 
         if is_user:
-            content_control = ft.Text(text, selectable=True)
+            content_control = ft.Text(text, selectable=True, size=CHAT_TEXT_SIZE)
         else:
             content_control = ft.Text(
                 text,
                 selectable=True,
                 weight=ft.FontWeight.W_500,
+                size=CHAT_TEXT_SIZE,
             )
 
         bubble = ft.Container(
             content=content_control,
-            bgcolor=ft.Colors.RED_400 if is_user else ft.Colors.BLUE_GREY_800,
+            bgcolor=THEME_USER_BUBBLE if is_user else THEME_ASSISTANT_BUBBLE,
             border_radius=12,
             padding=12,
             width=280 if needs_wrap else None, # MAGIC FIX: Auto-shrinks if None
@@ -244,10 +396,10 @@ def main(page: ft.Page):
         append_message(user_query, is_user=True)
         
         # We start the thinking bubble with width=None so it perfectly hugs the single dot
-        status_control = ft.Text("●", selectable=True, weight=ft.FontWeight.W_700)
+        status_control = ft.Text("●", selectable=True, weight=ft.FontWeight.W_700, size=max(10, CHAT_TEXT_SIZE - 2))
         status_bubble = ft.Container(
             content=status_control,
-            bgcolor=ft.Colors.BLUE_GREY_800,
+            bgcolor=THEME_ASSISTANT_BUBBLE,
             border_radius=12,
             padding=12,
             width=None, # Starts small!
@@ -286,6 +438,228 @@ def main(page: ft.Page):
             stop_button.disabled = True
             page.update()
 
+    settings_dialog = ft.AlertDialog(modal=False)
+    settings_view = "categories"
+
+    def apply_theme(theme_name):
+        nonlocal current_theme_name
+        nonlocal THEME_BG
+        nonlocal THEME_HEADER
+        nonlocal THEME_TEXT_SUBTLE
+        nonlocal THEME_BORDER
+        nonlocal THEME_ACCENT
+        nonlocal THEME_ACCENT_SOFT
+        nonlocal THEME_BUTTON_BG
+        nonlocal THEME_INPUT_BG
+        nonlocal THEME_CHAT_BG
+        nonlocal THEME_USER_BUBBLE
+        nonlocal THEME_ASSISTANT_BUBBLE
+
+        current_theme_name = theme_name
+        selected = THEMES[theme_name]
+        THEME_BG = selected["bg"]
+        THEME_HEADER = selected["header"]
+        THEME_TEXT_SUBTLE = selected["text_subtle"]
+        THEME_BORDER = selected["border"]
+        THEME_ACCENT = selected["accent"]
+        THEME_ACCENT_SOFT = selected["accent_soft"]
+        THEME_BUTTON_BG = selected["button_bg"]
+        THEME_INPUT_BG = selected["input_bg"]
+        THEME_CHAT_BG = selected["chat_bg"]
+        THEME_USER_BUBBLE = selected["user_bubble"]
+        THEME_ASSISTANT_BUBBLE = selected["assistant_bubble"]
+
+        page.bgcolor = THEME_BG
+        header.color = THEME_HEADER
+        subtitle.color = THEME_TEXT_SUBTLE
+        download_status.color = THEME_TEXT_SUBTLE
+
+        search_bar.bgcolor = THEME_INPUT_BG
+        search_bar.border_color = THEME_BORDER
+        search_bar.focused_border_color = THEME_ACCENT
+        search_bar.cursor_color = THEME_ACCENT
+        search_bar.hint_style = ft.TextStyle(color=THEME_TEXT_SUBTLE, size=max(11, CHAT_TEXT_SIZE - 1))
+
+        search_button.style = ft.ButtonStyle(
+            shape=ft.CircleBorder(),
+            bgcolor=THEME_ACCENT,
+            color=ft.Colors.WHITE,
+        )
+        new_chat_button.style = ft.ButtonStyle(
+            color=THEME_ACCENT_SOFT,
+            bgcolor=THEME_BUTTON_BG,
+            side=ft.BorderSide(1, THEME_BORDER),
+            shape=ft.RoundedRectangleBorder(radius=10),
+            padding=ft.padding.symmetric(horizontal=12, vertical=8),
+        )
+        settings_button.icon_color = THEME_ACCENT_SOFT
+        settings_button.style = ft.ButtonStyle(
+            bgcolor=THEME_BUTTON_BG,
+            side=ft.BorderSide(1, THEME_BORDER),
+            shape=ft.CircleBorder(),
+        )
+        stop_button.icon_color = THEME_ACCENT_SOFT
+        stop_button.bgcolor = THEME_BUTTON_BG
+
+        chat_frame.bgcolor = THEME_CHAT_BG
+        chat_frame.border = ft.border.all(1, THEME_BORDER)
+
+        for row in chat_list.controls:
+            if isinstance(row, ft.Row) and row.controls:
+                bubble = row.controls[0]
+                if isinstance(bubble, ft.Container):
+                    if row.alignment == ft.MainAxisAlignment.END:
+                        bubble.bgcolor = THEME_USER_BUBBLE
+                    else:
+                        bubble.bgcolor = THEME_ASSISTANT_BUBBLE
+
+        page.update()
+
+    def apply_text_size(size_name):
+        nonlocal current_text_size_name
+        nonlocal CHAT_TEXT_SIZE
+
+        current_text_size_name = size_name
+        CHAT_TEXT_SIZE = TEXT_SIZES[size_name]
+
+        search_bar.text_size = CHAT_TEXT_SIZE
+        search_bar.hint_style = ft.TextStyle(color=THEME_TEXT_SUBTLE, size=max(11, CHAT_TEXT_SIZE - 1))
+
+        for row in chat_list.controls:
+            if isinstance(row, ft.Row) and row.controls:
+                bubble = row.controls[0]
+                if isinstance(bubble, ft.Container) and isinstance(bubble.content, ft.Text):
+                    bubble.content.size = CHAT_TEXT_SIZE
+
+        page.update()
+
+    def close_settings():
+        settings_dialog.open = False
+        page.update()
+
+    def on_theme_select(theme_name):
+        apply_theme(theme_name)
+        close_settings()
+
+    def on_text_size_select(size_name):
+        apply_text_size(size_name)
+        close_settings()
+
+    def show_settings_categories(e=None):
+        nonlocal settings_view
+        settings_view = "categories"
+        render_settings_dialog()
+
+    def show_settings_themes(e=None):
+        nonlocal settings_view
+        settings_view = "themes"
+        render_settings_dialog()
+
+    def show_settings_text_size(e=None):
+        nonlocal settings_view
+        settings_view = "text_size"
+        render_settings_dialog()
+
+    def render_settings_dialog():
+        if settings_view == "categories":
+            settings_dialog.title = ft.Text("Settings", color=THEME_HEADER)
+            settings_dialog.content = ft.Container(
+                content=ft.Column(
+                    controls=[
+                        ft.OutlinedButton(
+                            "Themes",
+                            icon=ft.Icons.PALETTE,
+                            on_click=show_settings_themes,
+                            style=ft.ButtonStyle(
+                                color=THEME_ACCENT_SOFT,
+                                bgcolor=THEME_BUTTON_BG,
+                                side=ft.BorderSide(1, THEME_BORDER),
+                            ),
+                        ),
+                        ft.OutlinedButton(
+                            "Text Size",
+                            icon=ft.Icons.FORMAT_SIZE,
+                            on_click=show_settings_text_size,
+                            style=ft.ButtonStyle(
+                                color=THEME_ACCENT_SOFT,
+                                bgcolor=THEME_BUTTON_BG,
+                                side=ft.BorderSide(1, THEME_BORDER),
+                            ),
+                        ),
+                    ],
+                    tight=True,
+                ),
+                width=260,
+                height=160,
+            )
+            settings_dialog.actions = [ft.TextButton("Close", on_click=lambda ev: close_settings())]
+        elif settings_view == "themes":
+            theme_buttons = []
+            for theme_name in THEMES:
+                theme_buttons.append(
+                    ft.OutlinedButton(
+                        theme_name,
+                        on_click=lambda ev, name=theme_name: on_theme_select(name),
+                        style=ft.ButtonStyle(
+                            color=THEME_ACCENT_SOFT,
+                            bgcolor=THEME_BUTTON_BG,
+                            side=ft.BorderSide(1, THEME_BORDER),
+                        ),
+                    )
+                )
+
+            settings_dialog.title = ft.Text("Themes", color=THEME_HEADER)
+            settings_dialog.content = ft.Container(
+                content=ft.Column(
+                    controls=theme_buttons,
+                    tight=True,
+                    scroll=ft.ScrollMode.AUTO,
+                ),
+                width=260,
+                height=320,
+            )
+            settings_dialog.actions = [
+                ft.TextButton("Back", on_click=show_settings_categories),
+                ft.TextButton("Close", on_click=lambda ev: close_settings()),
+            ]
+        else:
+            size_buttons = []
+            for size_name, size_value in TEXT_SIZES.items():
+                size_buttons.append(
+                    ft.OutlinedButton(
+                        f"{size_name} ({size_value}px)",
+                        on_click=lambda ev, name=size_name: on_text_size_select(name),
+                        style=ft.ButtonStyle(
+                            color=THEME_ACCENT_SOFT,
+                            bgcolor=THEME_BUTTON_BG,
+                            side=ft.BorderSide(1, THEME_BORDER),
+                        ),
+                    )
+                )
+
+            settings_dialog.title = ft.Text("Text Size", color=THEME_HEADER)
+            settings_dialog.content = ft.Container(
+                content=ft.Column(
+                    controls=size_buttons,
+                    tight=True,
+                    scroll=ft.ScrollMode.AUTO,
+                ),
+                width=260,
+                height=220,
+            )
+            settings_dialog.actions = [
+                ft.TextButton("Back", on_click=show_settings_categories),
+                ft.TextButton("Close", on_click=lambda ev: close_settings()),
+            ]
+
+    def open_settings(e):
+        show_settings_categories()
+
+        if settings_dialog not in page.overlay:
+            page.overlay.append(settings_dialog)
+        settings_dialog.open = True
+        page.update()
+
     search_button = ft.ElevatedButton(
         "",
         icon=ft.Icons.SEND,
@@ -294,7 +668,7 @@ def main(page: ft.Page):
         height=46,
         style=ft.ButtonStyle(
             shape=ft.CircleBorder(),
-            bgcolor=ft.Colors.RED_400,
+            bgcolor=THEME_ACCENT,
             color=ft.Colors.WHITE,
         ),
     )
@@ -303,9 +677,9 @@ def main(page: ft.Page):
         "New Chat",
         on_click=on_new_chat_click,
         style=ft.ButtonStyle(
-            color=ft.Colors.RED_300,
-            bgcolor=ft.Colors.with_opacity(0.15, ft.Colors.RED_900),
-            side=ft.BorderSide(1, ft.Colors.RED_700),
+            color=THEME_ACCENT_SOFT,
+            bgcolor=THEME_BUTTON_BG,
+            side=ft.BorderSide(1, THEME_BORDER),
             shape=ft.RoundedRectangleBorder(radius=10),
             padding=ft.padding.symmetric(horizontal=12, vertical=8),
         ),
@@ -314,13 +688,13 @@ def main(page: ft.Page):
     settings_button = ft.IconButton(
         icon=ft.Icons.SETTINGS,
         icon_size=24,
-        icon_color=ft.Colors.RED_300,
-        on_click=lambda e: None,
+        icon_color=THEME_ACCENT_SOFT,
+        on_click=open_settings,
         width=42,
         height=42,
         style=ft.ButtonStyle(
-            bgcolor=ft.Colors.with_opacity(0.15, ft.Colors.RED_900),
-            side=ft.BorderSide(1, ft.Colors.RED_700),
+            bgcolor=THEME_BUTTON_BG,
+            side=ft.BorderSide(1, THEME_BORDER),
             shape=ft.CircleBorder(),
         ),
     )
@@ -328,8 +702,8 @@ def main(page: ft.Page):
     stop_button = ft.IconButton(
         icon=ft.Icons.STOP_CIRCLE_OUTLINED,
         tooltip="Stop",
-        icon_color=ft.Colors.RED_300,
-        bgcolor=ft.Colors.with_opacity(0.15, ft.Colors.RED_900),
+        icon_color=THEME_ACCENT_SOFT,
+        bgcolor=THEME_BUTTON_BG,
         on_click=on_stop_click,
         visible=False,
     )
@@ -352,16 +726,19 @@ def main(page: ft.Page):
         spacing=2,
     )
 
+    chat_frame = ft.Container(
+        content=chat_list,
+        bgcolor=THEME_CHAT_BG,
+        border=ft.border.all(1, THEME_BORDER),
+        border_radius=12,
+        padding=10,
+        expand=True,
+    )
+
     main_layout = ft.Column(
         controls=[
             header_section,
-            ft.Container(
-                content=chat_list,
-                border=ft.border.all(1, ft.Colors.GREY_800),
-                border_radius=12,
-                padding=10,
-                expand=True,
-            ),
+            chat_frame,
             ft.Row([search_bar, stop_button, search_button], alignment=ft.MainAxisAlignment.CENTER),
         ],
         spacing=12,
