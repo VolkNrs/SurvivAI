@@ -21,7 +21,7 @@ def build_database_from_csv():
     cursor.execute('DELETE FROM guides')
 
     
-    csv_filename = "test_data.csv"
+    csv_filename = "aigen_large_data.csv"
     
     if not os.path.exists(csv_filename):
         print(f"Error: Could not find {csv_filename}. Make sure it is in the same folder!")

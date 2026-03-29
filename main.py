@@ -1,7 +1,8 @@
 import flet as ft
 import sqlite3
 import asyncio
-from aiengine import ask_ai
+import queue
+from aiengine import ask_ai, ensure_model_ready
 
 def search_database(query):
     try:
@@ -20,6 +21,7 @@ def main(page: ft.Page):
     page.theme_mode = ft.ThemeMode.DARK
     page.padding = 20
     chat_history = []
+    model_ready = False
 
     header = ft.Text("SurvivAI", size=32, weight=ft.FontWeight.BOLD, color=ft.Colors.RED_400)
     subtitle = ft.Text(
@@ -27,6 +29,9 @@ def main(page: ft.Page):
         color=ft.Colors.GREY_500,
         size=11,
     )
+
+    download_status = ft.Text("", color=ft.Colors.GREY_400, size=11, visible=False)
+    download_progress = ft.ProgressBar(width=280, value=None, visible=False)
 
     chat_list = ft.ListView(expand=True, spacing=10, auto_scroll=True)
 
@@ -38,8 +43,13 @@ def main(page: ft.Page):
     )
 
     def append_message(text, is_user):
+        if is_user:
+            content_control = ft.Text(text, selectable=True)
+        else:
+            content_control = ft.Markdown(text)
+
         bubble = ft.Container(
-            content=ft.Text(text, selectable=True),
+            content=content_control,
             bgcolor=ft.Colors.RED_400 if is_user else ft.Colors.BLUE_GREY_800,
             border_radius=12,
             padding=12,
@@ -53,24 +63,105 @@ def main(page: ft.Page):
         return bubble.content
 
     async def process_query(user_query, ai_status_text):
-        db_result = await asyncio.to_thread(search_database, user_query)
+        nonlocal model_ready
+        progress_queue = queue.Queue()
+        stream_queue = queue.Queue()
+        downloading_shown = False
 
-        if db_result:
-            ai_response = await asyncio.to_thread(ask_ai, user_query, db_result[1], chat_history)
-        else:
-            ai_response = await asyncio.to_thread(
-                ask_ai,
-                user_query,
-                "No specific data found in offline vault.",
-                chat_history,
-            )
+        def on_model_progress(downloaded, total):
+            progress_queue.put((downloaded, total))
 
-        ai_status_text.value = ai_response.strip()
-        chat_history.append({"role": "user", "content": user_query})
-        chat_history.append({"role": "assistant", "content": ai_status_text.value})
-        search_button.disabled = False
-        new_chat_button.disabled = False
-        page.update()
+        def on_stream_chunk(text_chunk):
+            stream_queue.put(text_chunk)
+
+        try:
+            # Start DB lookup early so it overlaps with first-run model initialization.
+            db_task = asyncio.create_task(asyncio.to_thread(search_database, user_query))
+
+            if not model_ready:
+                model_task = asyncio.create_task(asyncio.to_thread(ensure_model_ready, on_model_progress))
+
+                while not model_task.done():
+                    while not progress_queue.empty():
+                        downloaded, total = progress_queue.get_nowait()
+                        if not downloading_shown:
+                            download_status.visible = True
+                            download_progress.visible = True
+                            downloading_shown = True
+                        if total > 0:
+                            ratio = min(1.0, downloaded / total)
+                            download_progress.value = ratio
+                            download_status.value = f"Downloading offline model... {ratio * 100:.0f}%"
+                        else:
+                            download_progress.value = None
+                            download_status.value = "Downloading offline model..."
+
+                    page.update()
+                    await asyncio.sleep(0.15)
+
+                await model_task
+                model_ready = True
+
+            db_result = await db_task
+
+            ai_status_text.value = "."
+            page.update()
+
+            if db_result:
+                ai_task = asyncio.create_task(
+                    asyncio.to_thread(ask_ai, user_query, db_result[1], chat_history, on_stream_chunk)
+                )
+            else:
+                ai_task = asyncio.create_task(
+                    asyncio.to_thread(
+                        ask_ai,
+                        user_query,
+                        "No specific data found in offline vault.",
+                        chat_history,
+                        on_stream_chunk,
+                    )
+                )
+
+            last_dot_update = asyncio.get_running_loop().time()
+            while not ai_task.done():
+                updated = False
+                while not stream_queue.empty():
+                    text_chunk = stream_queue.get_nowait()
+                    if text_chunk:
+                        if ai_status_text.value in {".", "..", "..."}:
+                            ai_status_text.value = ""
+                        ai_status_text.value += text_chunk
+                        updated = True
+                if not updated and ai_status_text.value in {".", "..", "..."}:
+                    now = asyncio.get_running_loop().time()
+                    if now - last_dot_update >= 0.30:
+                        ai_status_text.value = "." * ((len(ai_status_text.value) % 3) + 1)
+                        last_dot_update = now
+                        updated = True
+                if updated:
+                    page.update()
+                await asyncio.sleep(0.04)
+
+            while not stream_queue.empty():
+                text_chunk = stream_queue.get_nowait()
+                if text_chunk:
+                    ai_status_text.value += text_chunk
+
+            ai_response = await ai_task
+
+            ai_status_text.value = ai_response.strip()
+            chat_history.append({"role": "user", "content": user_query})
+            chat_history.append({"role": "assistant", "content": ai_status_text.value})
+        except Exception:
+            ai_status_text.value = "Unable to process right now. Please try again."
+        finally:
+            if downloading_shown:
+                download_progress.visible = False
+                download_status.visible = False
+
+            search_button.disabled = False
+            new_chat_button.disabled = False
+            page.update()
 
     def on_search_click(e):
         user_query = (search_bar.value or "").strip()
@@ -125,7 +216,7 @@ def main(page: ft.Page):
     )
 
     header_section = ft.Column(
-        controls=[top_row, subtitle],
+        controls=[top_row, subtitle, download_status, download_progress],
         spacing=2,
     )
 
