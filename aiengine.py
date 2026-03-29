@@ -225,7 +225,7 @@ def _extract_stream_text(chunk: Any) -> str:
         return ""
 
 
-def ask_ai(user_query, context_from_db, chat_history=None, stream_callback: Callable[[str], None] | None = None):
+def ask_ai(user_query, context_from_db, chat_history=None, stream_callback: Callable[[str], bool | None] | None = None):
     if _is_chitchat(user_query):
         return "Hey. I am ready to help. Tell me your survival situation and what you have with you."
 
@@ -317,7 +317,9 @@ def ask_ai(user_query, context_from_db, chat_history=None, stream_callback: Call
                 text_chunk = _extract_stream_text(chunk)
                 if text_chunk:
                     parts.append(text_chunk)
-                    stream_callback(text_chunk)
+                    keep_streaming = stream_callback(text_chunk)
+                    if keep_streaming is False:
+                        break
             return _sanitize_response("".join(parts))
 
         response = cast(

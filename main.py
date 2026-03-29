@@ -22,6 +22,8 @@ def main(page: ft.Page):
     page.padding = 20
     chat_history = []
     model_ready = False
+    auto_follow_stream = True
+    generation_state = {"is_generating": False, "stop_requested": False}
 
     header = ft.Text("SurvivAI", size=32, weight=ft.FontWeight.BOLD, color=ft.Colors.RED_400)
     subtitle = ft.Text(
@@ -33,7 +35,25 @@ def main(page: ft.Page):
     download_status = ft.Text("", color=ft.Colors.GREY_400, size=11, visible=False)
     download_progress = ft.ProgressBar(width=280, value=None, visible=False)
 
-    chat_list = ft.ListView(expand=True, spacing=14, auto_scroll=True)
+    def on_chat_scroll(e: ft.OnScrollEvent):
+        nonlocal auto_follow_stream
+        try:
+            pixels = float(e.pixels)
+            max_extent = float(e.max_scroll_extent)
+            auto_follow_stream = (max_extent - pixels) <= 40
+        except Exception:
+            pass
+
+    chat_list = ft.ListView(
+        expand=True,
+        spacing=14,
+        auto_scroll=False,
+        on_scroll=on_chat_scroll,
+    )
+
+    async def maybe_scroll_to_bottom(duration=90):
+        if auto_follow_stream:
+            await chat_list.scroll_to(offset=-1, duration=duration)
 
     search_bar = ft.TextField(
         hint_text="Describe the situation...",
@@ -52,7 +72,11 @@ def main(page: ft.Page):
         if is_user:
             content_control = ft.Text(text, selectable=True)
         else:
-            content_control = ft.Markdown(text, selectable=True)
+            content_control = ft.Text(
+                text,
+                selectable=True,
+                weight=ft.FontWeight.W_500,
+            )
 
         bubble = ft.Container(
             content=content_control,
@@ -75,12 +99,18 @@ def main(page: ft.Page):
         progress_queue = queue.Queue()
         stream_queue = queue.Queue()
         downloading_shown = False
+        generation_state["is_generating"] = True
+        generation_state["stop_requested"] = False
+        stop_button.disabled = False
 
         def on_model_progress(downloaded, total):
             progress_queue.put((downloaded, total))
 
         def on_stream_chunk(text_chunk):
+            if generation_state["stop_requested"]:
+                return False
             stream_queue.put(text_chunk)
+            return True
 
         try:
             db_task = asyncio.create_task(asyncio.to_thread(search_database, user_query))
@@ -131,6 +161,9 @@ def main(page: ft.Page):
 
             last_dot_update = asyncio.get_running_loop().time()
             while not ai_task.done():
+                if generation_state["stop_requested"]:
+                    break
+
                 updated = False
                 while not stream_queue.empty():
                     text_chunk = stream_queue.get_nowait()
@@ -151,9 +184,21 @@ def main(page: ft.Page):
                         last_dot_update = now
                         updated = True
                 if updated:
-                    await chat_list.scroll_to(offset=-1, duration=80)
+                    await maybe_scroll_to_bottom(duration=80)
                     page.update()
                 await asyncio.sleep(0.04)
+
+            if generation_state["stop_requested"]:
+                ai_status_text.value = "STOPPED"
+                status_bubble.width = None
+                try:
+                    await ai_task
+                except Exception:
+                    pass
+                chat_history.append({"role": "user", "content": user_query})
+                chat_history.append({"role": "assistant", "content": ai_status_text.value})
+                await maybe_scroll_to_bottom(duration=120)
+                return
 
             while not stream_queue.empty():
                 text_chunk = stream_queue.get_nowait()
@@ -167,7 +212,7 @@ def main(page: ft.Page):
             ai_response = await ai_task
 
             ai_status_text.value = ai_response.strip()
-            await chat_list.scroll_to(offset=-1, duration=120)
+            await maybe_scroll_to_bottom(duration=120)
             chat_history.append({"role": "user", "content": user_query})
             chat_history.append({"role": "assistant", "content": ai_status_text.value})
         except Exception:
@@ -179,18 +224,27 @@ def main(page: ft.Page):
 
             search_button.disabled = False
             new_chat_button.disabled = False
+            stop_button.visible = False
+            stop_button.disabled = False
+            generation_state["is_generating"] = False
+            generation_state["stop_requested"] = False
             page.update()
 
     def on_search_click(e):
+        nonlocal auto_follow_stream
+        if generation_state["is_generating"]:
+            return
+
         user_query = (search_bar.value or "").strip()
         if not user_query:
             return
 
+        auto_follow_stream = True
         page.run_task(search_button.focus)
         append_message(user_query, is_user=True)
         
         # We start the thinking bubble with width=None so it perfectly hugs the single dot
-        status_control = ft.Markdown("●", selectable=True)
+        status_control = ft.Text("●", selectable=True, weight=ft.FontWeight.W_700)
         status_bubble = ft.Container(
             content=status_control,
             bgcolor=ft.Colors.BLUE_GREY_800,
@@ -210,17 +264,27 @@ def main(page: ft.Page):
         search_bar.hint_text = "Give more info or ask..."
         search_button.disabled = True
         new_chat_button.disabled = True
+        stop_button.visible = True
+        stop_button.disabled = False
         page.update()
 
         # Pass the bubble object into process_query so it can resize it later
         page.run_task(process_query, user_query, status_text, status_bubble)
 
     def on_new_chat_click(e):
+        nonlocal auto_follow_stream
         chat_history.clear()
         chat_list.controls.clear()
         search_bar.value = ""
         search_bar.hint_text = "Describe the situation..."
+        auto_follow_stream = True
         page.update()
+
+    def on_stop_click(e):
+        if generation_state["is_generating"]:
+            generation_state["stop_requested"] = True
+            stop_button.disabled = True
+            page.update()
 
     search_button = ft.ElevatedButton(
         "",
@@ -247,8 +311,38 @@ def main(page: ft.Page):
         ),
     )
 
+    settings_button = ft.IconButton(
+        icon=ft.Icons.SETTINGS,
+        icon_size=24,
+        icon_color=ft.Colors.RED_300,
+        on_click=lambda e: None,
+        width=42,
+        height=42,
+        style=ft.ButtonStyle(
+            bgcolor=ft.Colors.with_opacity(0.15, ft.Colors.RED_900),
+            side=ft.BorderSide(1, ft.Colors.RED_700),
+            shape=ft.CircleBorder(),
+        ),
+    )
+
+    stop_button = ft.IconButton(
+        icon=ft.Icons.STOP_CIRCLE_OUTLINED,
+        tooltip="Stop",
+        icon_color=ft.Colors.RED_300,
+        bgcolor=ft.Colors.with_opacity(0.15, ft.Colors.RED_900),
+        on_click=on_stop_click,
+        visible=False,
+    )
+
     top_row = ft.Row(
-        controls=[header, new_chat_button],
+        controls=[
+            header,
+            ft.Row(
+                controls=[settings_button, new_chat_button],
+                spacing=8,
+                tight=True,
+            ),
+        ],
         alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
         vertical_alignment=ft.CrossAxisAlignment.END,
     )
@@ -268,7 +362,7 @@ def main(page: ft.Page):
                 padding=10,
                 expand=True,
             ),
-            ft.Row([search_bar, search_button], alignment=ft.MainAxisAlignment.CENTER),
+            ft.Row([search_bar, stop_button, search_button], alignment=ft.MainAxisAlignment.CENTER),
         ],
         spacing=12,
         expand=True,
