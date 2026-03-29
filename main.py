@@ -2,6 +2,8 @@ import flet as ft
 import sqlite3
 import asyncio
 import queue
+import json
+from pathlib import Path
 from aiengine import ask_ai, ensure_model_ready
 
 def search_database(query):
@@ -17,6 +19,8 @@ def search_database(query):
         return ("Error", str(e))
 
 def main(page: ft.Page):
+    SETTINGS_PATH = Path("user_settings.json")
+
     THEMES = {
         "Default": {
             "bg": ft.Colors.BLACK,
@@ -137,8 +141,6 @@ def main(page: ft.Page):
         },
     }
 
-    current_theme_name = "Default"
-    active_theme = THEMES[current_theme_name]
     TEXT_SIZES = {
         "Small": 12,
         "Medium": 14,
@@ -146,7 +148,29 @@ def main(page: ft.Page):
         "XL": 18,
         "XXL": 30,
     }
-    current_text_size_name = "Medium"
+
+    def load_user_settings():
+        if not SETTINGS_PATH.exists():
+            return {}
+        try:
+            with SETTINGS_PATH.open("r", encoding="utf-8") as settings_file:
+                data = json.load(settings_file)
+                if isinstance(data, dict):
+                    return data
+        except Exception:
+            pass
+        return {}
+
+    loaded_settings = load_user_settings()
+    current_theme_name = loaded_settings.get("theme", "Default")
+    if current_theme_name not in THEMES:
+        current_theme_name = "Default"
+
+    current_text_size_name = loaded_settings.get("text_size", "Large")
+    if current_text_size_name not in TEXT_SIZES:
+        current_text_size_name = "Large"
+
+    active_theme = THEMES[current_theme_name]
     CHAT_TEXT_SIZE = TEXT_SIZES[current_text_size_name]
 
     THEME_BG = active_theme["bg"]
@@ -211,7 +235,7 @@ def main(page: ft.Page):
         cursor_color=THEME_ACCENT,
         hint_style=ft.TextStyle(color=THEME_TEXT_SUBTLE, size=max(11, CHAT_TEXT_SIZE - 1)),
         border_radius=22,
-        content_padding=ft.padding.symmetric(horizontal=16, vertical=14),
+        content_padding=ft.Padding.symmetric(horizontal=16, vertical=14),
         expand=True,
         on_submit=lambda e: on_search_click(None),
     )
@@ -441,6 +465,17 @@ def main(page: ft.Page):
     settings_dialog = ft.AlertDialog(modal=False)
     settings_view = "categories"
 
+    def save_user_settings():
+        data = {
+            "theme": current_theme_name,
+            "text_size": current_text_size_name,
+        }
+        try:
+            with SETTINGS_PATH.open("w", encoding="utf-8") as settings_file:
+                json.dump(data, settings_file)
+        except Exception:
+            pass
+
     def apply_theme(theme_name):
         nonlocal current_theme_name
         nonlocal THEME_BG
@@ -468,6 +503,7 @@ def main(page: ft.Page):
         THEME_CHAT_BG = selected["chat_bg"]
         THEME_USER_BUBBLE = selected["user_bubble"]
         THEME_ASSISTANT_BUBBLE = selected["assistant_bubble"]
+        save_user_settings()
 
         page.bgcolor = THEME_BG
         header.color = THEME_HEADER
@@ -490,7 +526,7 @@ def main(page: ft.Page):
             bgcolor=THEME_BUTTON_BG,
             side=ft.BorderSide(1, THEME_BORDER),
             shape=ft.RoundedRectangleBorder(radius=10),
-            padding=ft.padding.symmetric(horizontal=12, vertical=8),
+            padding=ft.Padding.symmetric(horizontal=12, vertical=8),
         )
         settings_button.icon_color = THEME_ACCENT_SOFT
         settings_button.style = ft.ButtonStyle(
@@ -502,7 +538,7 @@ def main(page: ft.Page):
         stop_button.bgcolor = THEME_BUTTON_BG
 
         chat_frame.bgcolor = THEME_CHAT_BG
-        chat_frame.border = ft.border.all(1, THEME_BORDER)
+        chat_frame.border = ft.Border.all(1, THEME_BORDER)
 
         for row in chat_list.controls:
             if isinstance(row, ft.Row) and row.controls:
@@ -521,6 +557,7 @@ def main(page: ft.Page):
 
         current_text_size_name = size_name
         CHAT_TEXT_SIZE = TEXT_SIZES[size_name]
+        save_user_settings()
 
         search_bar.text_size = CHAT_TEXT_SIZE
         search_bar.hint_style = ft.TextStyle(color=THEME_TEXT_SUBTLE, size=max(11, CHAT_TEXT_SIZE - 1))
@@ -625,9 +662,12 @@ def main(page: ft.Page):
         else:
             size_buttons = []
             for size_name, size_value in TEXT_SIZES.items():
+                label = f"{size_name} ({size_value}px)"
+                if size_name == "Large":
+                    label += " - Default"
                 size_buttons.append(
                     ft.OutlinedButton(
-                        f"{size_name} ({size_value}px)",
+                        label,
                         on_click=lambda ev, name=size_name: on_text_size_select(name),
                         style=ft.ButtonStyle(
                             color=THEME_ACCENT_SOFT,
@@ -660,7 +700,7 @@ def main(page: ft.Page):
         settings_dialog.open = True
         page.update()
 
-    search_button = ft.ElevatedButton(
+    search_button = ft.Button(
         "",
         icon=ft.Icons.SEND,
         on_click=on_search_click,
@@ -681,7 +721,7 @@ def main(page: ft.Page):
             bgcolor=THEME_BUTTON_BG,
             side=ft.BorderSide(1, THEME_BORDER),
             shape=ft.RoundedRectangleBorder(radius=10),
-            padding=ft.padding.symmetric(horizontal=12, vertical=8),
+            padding=ft.Padding.symmetric(horizontal=12, vertical=8),
         ),
     )
 
@@ -729,7 +769,7 @@ def main(page: ft.Page):
     chat_frame = ft.Container(
         content=chat_list,
         bgcolor=THEME_CHAT_BG,
-        border=ft.border.all(1, THEME_BORDER),
+        border=ft.Border.all(1, THEME_BORDER),
         border_radius=12,
         padding=10,
         expand=True,
