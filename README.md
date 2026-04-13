@@ -29,7 +29,7 @@ Async: asyncio for non-blocking AI streaming
 Clone the repository
 
 Bash
-git clone https://github.com/yourusername/SurvivAI.git
+git clone https://github.com/VolkNrs/SurvivAI.git
 cd SurvivAI
 Install Dependencies
 
