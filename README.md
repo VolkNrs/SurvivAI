@@ -39,7 +39,7 @@ Run the App
 
 Bash
 python main.py
-Note: On the first launch, the app will automatically download the ~2.3GB model file. Ensure you have a stable connection for this step.
+Note: On the first launch, the app will automatically download the 2.3GB model file.
 
 📂 Project Structure
 main.py: The Flet GUI and application logic.
@@ -49,6 +49,3 @@ aiengine.py: Handles LLM initialization, prompt engineering, and regex sanitizat
 survival_data.db: The SQLite vault containing verified guides and tags.
 
 models/: Directory where the GGUF model is stored locally.
-
-⚠️ Disclaimer
-SurvivAI is a supplemental tool. While it uses verified data, it is not a replacement for professional medical advice or emergency services. Use at your own risk in survival situations.
