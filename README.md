@@ -1,6 +1,8 @@
 🛡️ SurvivAI
 Offline-First AI Emergency Assistant
+
 It's an ongoing project!
+
 SurvivAI is a lightweight, mobile optimized survival assistant that runs a Large Language Model (LLM) entirely on your device. No internet, no APIs, and no tracking—just critical guidance when you are off the grid.
 
 🚀 Key Features
