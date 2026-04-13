@@ -788,4 +788,4 @@ def main(page: ft.Page):
     page.add(ft.SafeArea(main_layout, expand=True))
 
 if __name__ == "__main__":
-    ft.app(target=main)
+    ft.run(main)
