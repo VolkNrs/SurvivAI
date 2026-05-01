@@ -1,5 +1,4 @@
-🛡️ SurvivAI
-Offline-First AI Emergency Assistant
+🛡️ SurvivAI-Offline AI Emergency Assistant
 
 It's an ongoing project!
 
