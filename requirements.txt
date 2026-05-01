@@ -1,4 +1,2 @@
 flet
 llama-cpp-python
-Model file (downloaded by setup.py / first run bootstrap):
-https://huggingface.co/sitsope/phi-3-mini-4k-instruct-q4/resolve/main/Phi-3-mini-4k-instruct-q4.gguf

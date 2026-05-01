@@ -1,0 +1,20 @@
+[tool.flet]
+org = "com.survivai"
+product = "SurvivAI"
+name = "SurvivAI"
+description = "Offline emergency survival AI assistant"
+version = "1.1.0"
+build_number = 2
+company = "SurvivAI"
+
+# Assets bundled into the app (database goes here so it's available on first run)
+assets_dir = "assets"
+
+[tool.flet.android]
+permissions = ["INTERNET"]
+# llama-cpp-python requires cmake + NDK; supply a pre-built wheel if available.
+# pip_pre = true  # uncomment to allow pre-release wheels
+
+[tool.flet.app]
+# Entry-point
+module = "main"

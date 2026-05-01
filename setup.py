@@ -1,4 +1,3 @@
-#If there is no AI model
 
 
 import subprocess
