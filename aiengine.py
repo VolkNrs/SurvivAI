@@ -73,6 +73,14 @@ SURVIVAL_INVENTORY_PATTERNS = [
     r"\bfire\b",
     r"\bcollapse\b",
     r"\brubble\b",
+    r"written\s+by\s+openai[^.]*\.?",
+    r"written\s+by\s+survivai[^.]*\.?",
+    r"\ball\s+rights\s+reserved\.?",
+    r"as\s+an\s+ai\s+(language\s+)?model\b[^.]*\.?",
+    r"\bopenai\b",
+    r"\bchatgpt\b",
+    r"\bgpt-\d",
+    r"\blarge\s+language\s+model\b",
 ]
 
 CHITCHAT_PATTERNS = [
