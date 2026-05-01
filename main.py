@@ -455,7 +455,8 @@ async def main(page: ft.Page):
         _last_fu_ref["row"] = chat_list.controls[-1]
 
     def _append_bubble(text: str, is_user: bool) -> ft.Text:
-        needs_wrap = len(text) > 32 or "\n" in text
+        max_line = max((len(ln) for ln in text.split("\n")), default=0)
+        needs_wrap = max_line > 50
         text_ctrl = ft.Text(
             text, selectable=True, size=CHAT_TEXT_SIZE,
             weight=ft.FontWeight.W_400 if is_user else ft.FontWeight.W_500,
@@ -562,7 +563,7 @@ async def main(page: ft.Page):
                         raw_parts.append(chunk)
                         clean = sanitize_response("".join(raw_parts))
                         ai_text.value = clean if clean else "●"
-                        if ai_bubble.width is None and (len(ai_text.value) > 32 or "\n" in ai_text.value):
+                        if ai_bubble.width is None and len(ai_text.value) > 55:
                             ai_bubble.width = bubble_width()
                         updated = True
                 if not updated and ai_text.value in {"●", "●●", "●●●"}:
@@ -595,7 +596,7 @@ async def main(page: ft.Page):
                     raw_parts.append(chunk)
 
             raw_joined = "".join(raw_parts)
-            if ai_bubble.width is None and (len(raw_joined) > 32 or "\n" in raw_joined):
+            if ai_bubble.width is None and len(raw_joined) > 55:
                 ai_bubble.width = bubble_width()
 
             final = await ai_task

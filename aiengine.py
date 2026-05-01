@@ -73,10 +73,11 @@ SURVIVAL_INVENTORY_PATTERNS = [
     r"\bfire\b",
     r"\bcollapse\b",
     r"\brubble\b",
-    r"written\s+by\s+openai[^.]*\.?",
-    r"written\s+by\s+survivai[^.]*\.?",
-    r"\ball\s+rights\s+reserved\.?",
-    r"as\s+an\s+ai\s+(language\s+)?model\b[^.]*\.?",
+    r"[ \t]*written\s+by\s+\w[^\n]*",
+    r"[ \t]*author\s*:\s*\w[^\n]*",
+    r"[ \t]*\ball\s+rights\s+reserved[^\n]*",
+    r"[^.\n]*\bas\s+an\s+ai\b[^.\n]*[,.]?",
+    r"[^.\n]*\bi\s+(?:am|'m)\s+an\s+ai\b[^.\n]*[,.]?",
     r"\bopenai\b",
     r"\bchatgpt\b",
     r"\bgpt-\d",
@@ -310,7 +311,11 @@ def ask_ai(user_query, context_from_db, chat_history=None, stream_callback: Call
         llm_client = _get_llm()
         prompt_tokens = len(llm_client.tokenize(prompt.encode("utf-8")))
         max_tokens = max(96, min(MAX_OUTPUT_TOKENS, MODEL_CTX - prompt_tokens - 16))
-        _stop = ["<|end|>", "<|user|>", "<|system|>"]
+        _stop = [
+            "<|end|>", "<|user|>", "<|system|>",
+            "OpenAI", "ChatGPT", "All rights reserved",
+            "Written by", "Author:",
+        ]
         if stream_callback:
             stream_response = llm_client(
                 prompt,
@@ -319,7 +324,7 @@ def ask_ai(user_query, context_from_db, chat_history=None, stream_callback: Call
                 echo=False,
                 stream=True,
                 temperature=0.2,
-                repeat_penalty=1.1,
+                repeat_penalty=1.15,
                 top_p=0.9,
             )
             parts = []
@@ -341,7 +346,7 @@ def ask_ai(user_query, context_from_db, chat_history=None, stream_callback: Call
                 echo=False,
                 stream=False,
                 temperature=0.2,
-                repeat_penalty=1.1,
+                repeat_penalty=1.15,
                 top_p=0.9,
             ),
         )
